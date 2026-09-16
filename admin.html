@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yummy Yummy - Admin Paneli</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
+        body { background-color: #080808; color: #ffffff; min-height: 100vh; padding: 20px 15px 60px; }
+        .hidden { display: none !important; }
+        
+        #login-overlay { position: fixed; inset: 0; background: #050505; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .login-card { background: rgba(18, 18, 18, 0.95); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 20px; padding: 35px 25px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 0 30px rgba(255, 215, 0, 0.15); }
+        .login-card h2 { font-family: 'Cinzel', serif; color: #ffd700; font-size: 1.6rem; margin-bottom: 8px; }
+        .login-card p { color: #888888; font-size: 0.85rem; margin-bottom: 25px; }
+        .error-message { color: #e74c3c; font-size: 0.8rem; margin-top: 10px; display: none; }
+
+        .admin-header { text-align: center; max-width: 600px; margin: 0 auto 30px; padding-bottom: 20px; border-bottom: 1px solid rgba(255, 215, 0, 0.2); position: relative; }
+        .admin-header h1 { font-family: 'Cinzel', serif; color: #ffd700; font-size: 1.8rem; }
+        .logout-btn { position: absolute; right: 0; top: 0; background: rgba(231, 76, 60, 0.15); border: 1px solid #e74c3c; color: #e74c3c; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; }
+
+        .container { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 30px; }
+        .admin-card { background: rgba(18, 18, 18, 0.9); border: 1px solid rgba(255, 215, 0, 0.25); border-radius: 20px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .card-title { font-family: 'Cinzel', serif; color: #ffd700; font-size: 1.2rem; margin-bottom: 20px; }
+        .form-group { margin-bottom: 18px; text-align: left; }
+        .form-group label { display: block; font-size: 0.8rem; color: #cccccc; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; }
+        .form-control { width: 100%; padding: 14px 16px; background: #121212; border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 12px; color: #ffffff; font-size: 0.95rem; outline: none; }
+        .form-control:focus { border-color: #ffd700; }
+        
+        .checkbox-group { display: flex; align-items: center; gap: 10px; background: #121212; padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(255, 215, 0, 0.2); cursor: pointer; }
+        .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; accent-color: #e74c3c; cursor: pointer; }
+        .checkbox-group label { margin-bottom: 0; cursor: pointer; color: #e74c3c; font-weight: 700; }
+
+        .file-upload-wrapper { position: relative; background: #121212; border: 2px dashed rgba(255, 215, 0, 0.3); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; }
+        .file-upload-wrapper input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+        .preview-img { max-width: 100%; max-height: 120px; border-radius: 8px; margin: 10px auto 0; display: none; border: 1px solid #ffd700; object-fit: cover; }
+
+        .btn-submit { width: 100%; padding: 16px; background: linear-gradient(135deg, #ffd700, #ffa500); border: none; border-radius: 12px; color: #000000; font-weight: 700; font-size: 1rem; cursor: pointer; }
+        .btn-cancel { width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px; color: #ffffff; font-weight: 600; font-size: 0.9rem; cursor: pointer; margin-top: 10px; display: none; }
+        
+        .product-list { display: flex; flex-direction: column; gap: 12px; }
+        .product-item { display: flex; align-items: center; background: #141414; border: 1px solid rgba(255, 215, 0, 0.15); border-radius: 14px; padding: 12px 16px; gap: 12px; transition: opacity 0.3s; }
+        .product-item.out-of-stock { opacity: 0.55; border-color: rgba(231, 76, 60, 0.4); }
+        .product-img { width: 55px; height: 55px; border-radius: 10px; object-fit: cover; border: 1px solid rgba(255, 215, 0, 0.3); }
+        .product-details { flex-grow: 1; }
+        .product-details h4 { font-size: 0.95rem; color: #ffffff; display: flex; align-items: center; gap: 6px; }
+        .product-details .cat-tag { font-size: 0.7rem; color: #ffd700; text-transform: uppercase; display: block; }
+        .product-details .price { font-weight: 700; color: #2ecc71; font-size: 0.9rem; }
+        .sold-out-badge { background: #e74c3c; color: #fff; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
+
+        .action-btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+        .btn-toggle-stock { background: rgba(230, 126, 34, 0.15); border: 1px solid #e67e22; color: #e67e22; padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 0.75rem; font-weight: 600; }
+        .btn-toggle-stock.is-sold { background: rgba(46, 204, 113, 0.15); border-color: #2ecc71; color: #2ecc71; }
+        .btn-edit { background: rgba(52, 152, 219, 0.15); border: 1px solid #3498db; color: #3498db; padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 0.75rem; }
+        .btn-delete { background: rgba(231, 76, 60, 0.15); border: 1px solid #e74c3c; color: #e74c3c; padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 0.75rem; }
+        
+        .btn-seed { background: rgba(255, 215, 0, 0.1); border: 1px solid #ffd700; color: #ffd700; padding: 12px; border-radius: 12px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <div id="login-overlay">
+        <div class="login-card">
+            <h2>YUMMY YUMMY</h2>
+            <p>Admin Paneli Girişi</p>
+            <form id="login-form">
+                <div class="form-group">
+                    <input type="password" id="admin-pass" class="form-control" placeholder="Şifre (1234)" required style="text-align: center;">
+                </div>
+                <button type="submit" class="btn-submit">GİRİŞ YAP</button>
+                <p id="error-msg" class="error-message">Hatalı şifre!</p>
+            </form>
+        </div>
+    </div>
+
+    <div id="admin-content" class="hidden">
+        <header class="admin-header">
+            <button id="logout-btn" class="logout-btn">Çıkış Yap</button>
+            <h1>YUMMY YUMMY</h1>
+            <p>Admin Ürün Yönetim Paneli</p>
+        </header>
+
+        <div class="container">
+            <div class="admin-card">
+                <h2 class="card-title" id="form-card-title">✨ Yeni Ürün Ekle</h2>
+                <form id="product-form">
+                    <input type="hidden" id="edit-id" value="">
+
+                    <div class="form-group">
+                        <label for="category">Kategori Seçin</label>
+                        <select id="category" class="form-control" required>
+                            <option value="" disabled selected>Kategori Seçiniz...</option>
+                            <option value="Tatlılar">🍰 Tatlılar</option>
+                            <option value="Kuruyemiş">🥜 Kuruyemiş</option>
+                            <option value="YY Special">⭐ YY Special</option>
+                            <option value="Soğuk Kahve">🧋 Soğuk Kahve</option>
+                            <option value="Sıcak Kahve">☕ Sıcak Kahve</option>
+                            <option value="Soğuk Special">🍹 Soğuk Special</option>
+                            <option value="Soğuk İçecekler">🥤 Soğuk İçecekler</option>
+                            <option value="Sıcak İçecekler">🫖 Sıcak İçecekler</option>
+                            <option value="Mutfak (YY Kitchen)">🍳 Mutfak (YY Kitchen)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="title">Ürün Adı</label>
+                        <input type="text" id="title" class="form-control" placeholder="Örn: San Sebastian" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Açıklama (İsteğe Bağlı)</label>
+                        <input type="text" id="description" class="form-control" placeholder="Örn: Belçika çikolatası ile">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="price">Fiyat (₺)</label>
+                        <input type="number" id="price" class="form-control" placeholder="Örn: 180" step="0.5" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="calories">Kalori (kcal - İsteğe Bağlı)</label>
+                        <input type="number" id="calories" class="form-control" placeholder="Örn: 450">
+                    </div>
+
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="is-sold-out">
+                            <label for="is-sold-out">🚫 Ürün Tükendi (Stokta Yok)</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Görsel</label>
+                        <div class="file-upload-wrapper">
+                            <span id="upload-status">Görsel seçmek için tıklayın</span>
+                            <input type="file" id="image" accept="image/*">
+                            <img id="image-preview" class="preview-img" alt="Önizleme">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="submit-btn" class="btn-submit">ÜRÜNÜ KAYDET</button>
+                    <button type="button" id="cancel-edit-btn" class="btn-cancel">Düzenlemeyi İptal Et</button>
+                </form>
+            </div>
+
+            <div class="admin-card">
+                <h2 class="card-title">📋 Eklenen Ürünler</h2>
+                <div id="product-list" class="product-list"></div>
+                <button id="seed-btn" class="btn-seed">🚀 Varsayılan 58 Ürünü Veritabanına Yükle</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK Entegrasyonu -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            updateDoc, 
+            deleteDoc, 
+            doc, 
+            onSnapshot 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB7nXbtT1qlQZxBnkDIY8A4nbRSKZwu7z0",
+            authDomain: "yummy-yummy-87c99.firebaseapp.com",
+            projectId: "yummy-yummy-87c99",
+            storageBucket: "yummy-yummy-87c99.firebasestorage.app",
+            messagingSenderId: "1036069774640",
+            appId: "1:1036069774640:web:44c5b2a09a5c89df96bd38"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const productsCol = collection(db, "products");
+
+        let currentProducts = [];
+        let imageBase64 = "";
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const ADMIN_PASSWORD = "1234";
+            const loginOverlay = document.getElementById('login-overlay');
+            const adminContent = document.getElementById('admin-content');
+            const loginForm = document.getElementById('login-form');
+            const adminPassInput = document.getElementById('admin-pass');
+            const errorMsg = document.getElementById('error-msg');
+            const logoutBtn = document.getElementById('logout-btn');
+            const seedBtn = document.getElementById('seed-btn');
+
+            if (sessionStorage.getItem('yummy_admin_logged') === 'true') {
+                loginOverlay.classList.add('hidden');
+                adminContent.classList.remove('hidden');
+                listenLiveProducts();
+            }
+
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (adminPassInput.value === ADMIN_PASSWORD) {
+                    sessionStorage.setItem('yummy_admin_logged', 'true');
+                    loginOverlay.classList.add('hidden');
+                    adminContent.classList.remove('hidden');
+                    listenLiveProducts();
+                } else {
+                    errorMsg.style.display = 'block';
+                }
+            });
+
+            logoutBtn.addEventListener('click', () => {
+                sessionStorage.removeItem('yummy_admin_logged');
+                location.reload();
+            });
+
+            const productForm = document.getElementById('product-form');
+            const imageInput = document.getElementById('image');
+            const imagePreview = document.getElementById('image-preview');
+            const uploadStatus = document.getElementById('upload-status');
+            const productListContainer = document.getElementById('product-list');
+            const editIdInput = document.getElementById('edit-id');
+            const isSoldOutCheckbox = document.getElementById('is-sold-out');
+            const submitBtn = document.getElementById('submit-btn');
+            const cancelEditBtn = document.getElementById('cancel-edit-btn');
+            const formCardTitle = document.getElementById('form-card-title');
+
+            // 🔴 Firebase Canlı Veri Dinleyici (Real-time)
+            function listenLiveProducts() {
+                onSnapshot(productsCol, (snapshot) => {
+                    productListContainer.innerHTML = '';
+                    currentProducts = [];
+
+                    if (snapshot.empty) {
+                        productListContainer.innerHTML = '<p style="text-align:center; color:#666; font-style:italic;">Henüz eklenmiş ürün yok.</p>';
+                        return;
+                    }
+
+                    snapshot.forEach((docSnap) => {
+                        const product = { id: docSnap.id, ...docSnap.data() };
+                        currentProducts.push(product);
+
+                        const isSoldOut = product.isSoldOut || false;
+                        const itemHtml = `
+                            <div class="product-item ${isSoldOut ? 'out-of-stock' : ''}">
+                                <img src="${product.image || 'https://via.placeholder.com/55'}" class="product-img" alt="${product.title}">
+                                <div class="product-details">
+                                    <span class="cat-tag">${product.category}</span>
+                                    <h4>${product.title} ${isSoldOut ? '<span class="sold-out-badge">TÜKENDİ</span>' : ''}</h4>
+                                    <span class="price">${product.price} ₺ ${product.calories ? `• ${product.calories} kcal` : ''}</span>
+                                </div>
+                                <div class="action-btns">
+                                    <button class="btn-toggle-stock ${isSoldOut ? 'is-sold' : ''}" onclick="toggleStock('${product.id}', ${isSoldOut})">
+                                        ${isSoldOut ? 'Stokta Yap' : 'Tükendi Yap'}
+                                    </button>
+                                    <button class="btn-edit" onclick="editProduct('${product.id}')">Düzenle</button>
+                                    <button class="btn-delete" onclick="deleteProduct('${product.id}')">Sil</button>
+                                </div>
+                            </div>
+                        `;
+                        productListContainer.insertAdjacentHTML('beforeend', itemHtml);
+                    });
+                });
+            }
+
+            // Görsel Boyutlandırma (Base64)
+            imageInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const img = new Image();
+                        img.src = event.target.result;
+                        img.onload = function() {
+                            const canvas = document.createElement('canvas');
+                            const MAX_WIDTH = 400;
+                            let width = img.width;
+                            let height = img.height;
+
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+
+                            canvas.width = width;
+                            canvas.height = height;
+
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            imageBase64 = canvas.toDataURL('image/jpeg', 0.5);
+                            imagePreview.src = imageBase64;
+                            imagePreview.style.display = 'block';
+                            uploadStatus.textContent = file.name;
+                        };
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // 🟢 Tükendi Durumu Güncelleme
+            window.toggleStock = async function(id, currentStatus) {
+                const productRef = doc(db, "products", id);
+                await updateDoc(productRef, { isSoldOut: !currentStatus });
+            };
+
+            // 🔵 Düzenleme Moduna Alma
+            window.editProduct = function(id) {
+                const product = currentProducts.find(p => p.id === id);
+                if (!product) return;
+
+                document.getElementById('category').value = product.category;
+                document.getElementById('title').value = product.title;
+                document.getElementById('description').value = product.description || '';
+                document.getElementById('price').value = product.price;
+                document.getElementById('calories').value = product.calories || '';
+                isSoldOutCheckbox.checked = product.isSoldOut || false;
+                
+                editIdInput.value = id;
+                imageBase64 = product.image || "";
+
+                if (product.image) {
+                    imagePreview.src = product.image;
+                    imagePreview.style.display = 'block';
+                    uploadStatus.textContent = "Görsel yüklü (Değiştirmek için tıklayın)";
+                } else {
+                    imagePreview.style.display = 'none';
+                    uploadStatus.textContent = "Görsel seçmek için tıklayın";
+                }
+
+                formCardTitle.textContent = "✏️ Ürünü Güncelle";
+                submitBtn.textContent = "GÜNCELLEMEYİ KAYDET";
+                cancelEditBtn.style.display = "block";
+
+                window.scrollTo({ top: productForm.offsetTop - 50, behavior: 'smooth' });
+            };
+
+            function resetForm() {
+                productForm.reset();
+                editIdInput.value = "";
+                isSoldOutCheckbox.checked = false;
+                imageBase64 = "";
+                imagePreview.style.display = 'none';
+                imagePreview.src = '';
+                uploadStatus.textContent = 'Görsel seçmek için tıklayın';
+
+                formCardTitle.textContent = "✨ Yeni Ürün Ekle";
+                submitBtn.textContent = "ÜRÜNÜ KAYDET";
+                cancelEditBtn.style.display = "none";
+            }
+
+            cancelEditBtn.addEventListener('click', resetForm);
+
+            // 🟠 Ürün Kaydet / Güncelle
+            productForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const category = document.getElementById('category').value;
+                const title = document.getElementById('title').value;
+                const description = document.getElementById('description').value;
+                const price = Number(document.getElementById('price').value);
+                const calories = document.getElementById('calories').value ? Number(document.getElementById('calories').value) : null;
+                const isSoldOut = isSoldOutCheckbox.checked;
+                const editId = editIdInput.value;
+
+                if (!imageBase64) {
+                    alert("Lütfen bir görsel seçin!");
+                    return;
+                }
+
+                const productData = {
+                    category,
+                    title,
+                    description,
+                    price,
+                    calories,
+                    image: imageBase64,
+                    isSoldOut
+                };
+
+                try {
+                    if (editId === "") {
+                        await addDoc(productsCol, productData);
+                    } else {
+                        const productRef = doc(db, "products", editId);
+                        await updateDoc(productRef, productData);
+                    }
+                    resetForm();
+                } catch (err) {
+                    console.error("Hata:", err);
+                    alert("Bir hata oluştu, lütfen tekrar deneyin.");
+                }
+            });
+
+            // 🔴 Ürün Silme
+            window.deleteProduct = async function(id) {
+                if (confirm("Bu ürünü tamamen silmek istediğinize emin misiniz?")) {
+                    await deleteDoc(doc(db, "products", id));
+                    resetForm();
+                }
+            };
+
+            // 🚀 Varsayılan 58 Ürünü Veritabanına Yükleme Butonu
+            seedBtn.addEventListener('click', async () => {
+                if (confirm("Varsayılan 58 ürün Firebase veritabanına eklenecek. Onaylıyor musunuz?")) {
+                    seedBtn.disabled = true;
+                    seedBtn.textContent = "Yükleniyor...";
+                    
+                    const defaultProducts = [
+                        { category: "Tatlılar", title: "Love Bombing", description: "Özel çikolata dolgulu lezzet bombası", price: 300, image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Tatlılar", title: "Lotus Magnolia", description: "Lotus bisküvi ve özel krema", price: 200, image: "https://images.unsplash.com/photo-1587314168485-3236d6710814?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Tatlılar", title: "Çilekli Magnolia", description: "Taze çilek taneleri ve ipeksi krema", price: 200, image: "https://images.unsplash.com/photo-1464305795204-6f5bbfc7fb81?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Tatlılar", title: "Oreo Magnolia", description: "Oreo parçacıklı nefis tatlı", price: 200, image: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Tatlılar", title: "Yummy Yummy Special (Ahmet)", description: "Şefin özel imza tatlısı", price: 275, image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Tatlılar", title: "Spoonful", description: "Yoğun çikolatalı kaşık tatlısı", price: 300, image: "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Tatlılar", title: "Çileklim", description: "Çilek aromalı özel sunum", price: 200, image: "https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Tatlılar", title: "Dubai Cup", description: "Orijinal Antep fıstıklı Dubai kupta tatlı", price: 250, image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Kuruyemiş", title: "Çekirdek (Büyük)", description: "Taze kavrulmuş ayçekirdeği", price: 120, image: "https://images.unsplash.com/photo-1528825871115-3581a5387919?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Kuruyemiş", title: "Çekirdek (Küçük)", description: "Taze kavrulmuş ayçekirdeği", price: 60, image: "https://images.unsplash.com/photo-1528825871115-3581a5387919?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "YY Special", title: "YY Special Milkshake", description: "Özel kıvamlı gurme milkshake", price: 160, image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk Kahve", title: "Ice Americano", description: "Espresso ve soğuk su", price: 110, image: "https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk Kahve", title: "Ice Latte", description: "Espresso, soğuk süt ve süt köpüğü", price: 130, image: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk Kahve", title: "Ice Caramel Latte", description: "Karamel şurubu, espresso ve soğuk süt", price: 130, image: "https://images.unsplash.com/photo-1553909489-cd47e0907980?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk Kahve", title: "Ice Mocha", description: "Çikolata sosu, espresso ve soğuk süt", price: 130, image: "https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk Kahve", title: "Ice White Mocha", description: "Beyaz çikolata sosu, espresso ve süt", price: 130, image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk Kahve", title: "Ice Affogato", description: "Vanilyalı dondurma üzerine sıcak espresso", price: 150, image: "https://images.unsplash.com/photo-1592663527359-cf6642f54cff?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk Kahve", title: "Ice Hazelnut Latte", description: "Fındık aromalı soğuk latte", price: 130, image: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk Kahve", title: "Ice Pumpkin Special Latte", description: "Balkabağı baharatlı özel soğuk latte", price: 180, image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk Kahve", title: "Ice Toffee Nut Latte", description: "Toffee nut aromalı soğuk kahve", price: 180, image: "https://images.unsplash.com/photo-1553909489-cd47e0907980?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Sıcak Kahve", title: "Türk Kahvesi", description: "Geleneksel közde pişirilmiş Türk kahvesi", price: 60, image: "https://images.unsplash.com/photo-1580933073521-dc49ac0d4e6a?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Sıcak Kahve", title: "Cortado", description: "Eşit miktarda espresso ve sıcak süt", price: 120, image: "https://images.unsplash.com/photo-1534778101976-62847782c213?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Sıcak Kahve", title: "Flat White", description: "Çift shot espresso ve kadifemsi süt", price: 130, image: "https://images.unsplash.com/photo-1577968897966-3d4325b36b61?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Sıcak Kahve", title: "Vanilla Latte", description: "Vanilya aromalı sıcak latte", price: 130, image: "https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Sıcak Kahve", title: "Americano", description: "Sıcak su ile inceltilmiş espresso", price: 110, image: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Sıcak Kahve", title: "Latte", description: "Zengin espresso ve sıcak süt", price: 130, image: "https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Sıcak Kahve", title: "Caramel Latte", description: "Karamel şuruplu sıcak latte", price: 130, image: "https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Sıcak Kahve", title: "Mocha", description: "Espresso, çikolata ve sıcak süt", price: 130, image: "https://images.unsplash.com/photo-1534778101976-62847782c213?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Sıcak Kahve", title: "White Mocha", description: "Espresso, beyaz çikolata ve süt", price: 130, image: "https://images.unsplash.com/photo-1577968897966-3d4325b36b61?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Sıcak Kahve", title: "Affogato", description: "Dondurmalı sıcak espresso deneyimi", price: 150, image: "https://images.unsplash.com/photo-1592663527359-cf6642f54cff?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Sıcak Kahve", title: "Hazelnut Latte", description: "Fındık aromalı sıcak latte", price: 130, image: "https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Sıcak Kahve", title: "Pumpkin Special Latte", description: "Balkabağı aromalı gurme sıcak latte", price: 180, image: "https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Sıcak Kahve", title: "Toffee Nut Latte", description: "Toffee nut aromalı sıcak kahve", price: 180, image: "https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk Special", title: "Yummy Limonata", description: "Ev yapımı taze sıkım ferahlatıcı limonata", price: 80, image: "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk Special", title: "Watermelon Frozen", description: "Taze karpuzlu buzlu serinletici", price: 150, image: "https://images.unsplash.com/photo-1553530666-ba11a7da3888?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk Special", title: "Strawberry Frozen", description: "Taze çilekli buzlu kokteyl", price: 150, image: "https://images.unsplash.com/photo-1553530666-ba11a7da3888?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk İçecekler", title: "Su", description: "0.5l Cam/Pet Su", price: 20, image: "https://images.unsplash.com/photo-1548839140-29a749e1bc4e?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk İçecekler", title: "Sade Soda", description: "Doğal maden suyu", price: 35, image: "https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk İçecekler", title: "Meyveli Soda", description: "(Elma, Limon, Frenk Üzümü, Karpuz-Çilek)", price: 45, image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk İçecekler", title: "Fuse Tea", description: "(Karpuz, Limon, Mango, Şeftali)", price: 70, image: "https://images.unsplash.com/photo-1556881286-fc6915169721?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk İçecekler", title: "Meyve Suyu", description: "(Şeftali, Karışık)", price: 40, image: "https://images.unsplash.com/photo-1613478223719-2ab802602423?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk İçecekler", title: "Şişe Kola", description: "Soğuk cam şişe kola", price: 40, image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk İçecekler", title: "Şişe Fanta", description: "Soğuk cam şişe fanta", price: 40, image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk İçecekler", title: "Şişe Sprite", description: "Soğuk cam şişe sprite", price: 40, image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk İçecekler", title: "Teneke Kola", description: "330ml kutu kola", price: 70, image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk İçecekler", title: "Teneke Fanta", description: "330ml kutu fanta", price: 70, image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk İçecekler", title: "Teneke Sprite", description: "330ml kutu sprite", price: 70, image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk İçecekler", title: "Portakal Suyu", description: "%100 Taze sıkma portakal suyu", price: 130, image: "https://images.unsplash.com/photo-1613478223719-2ab802602423?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk İçecekler", title: "Cool Lime", description: "Taze nane ve misket limonu ferahlığı", price: 130, image: "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk İçecekler", title: "Churchill", description: "Tuzlu limonlu soda serinliği", price: 100, image: "https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Soğuk İçecekler", title: "Zafer Gazozu", description: "Efsanevi yerel gazoz lezzeti", price: 50, image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Sıcak İçecekler", title: "Çay", description: "Demleme taze ince belli çay", price: 20, image: "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Sıcak İçecekler", title: "Sıcak Çikolata", description: "Yoğun lezzetli sıcak çikolata", price: 80, image: "https://images.unsplash.com/photo-1542990253-0d0f5be5f0ed?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Sıcak İçecekler", title: "Salep", description: "Tarçınlı geleneksel sıcak salep", price: 80, image: "https://images.unsplash.com/photo-1542990253-0d0f5be5f0ed?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Sıcak İçecekler", title: "Fındıklı Salep", description: "Fındık parçacıklı özel salep", price: 100, image: "https://images.unsplash.com/photo-1542990253-0d0f5be5f0ed?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Sıcak İçecekler", title: "Kış Çayı", description: "Şifalı bitki ve baharat harmanı", price: 75, image: "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Mutfak (YY Kitchen)", title: "Yarım Köfte Ekmek", description: "Özel baharatlı ızgara köfte, domates, yeşillik", price: 160, image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&auto=format&fit=crop", isSoldOut: false },
+                        { category: "Mutfak (YY Kitchen)", title: "3 Çeyrek Köfte Ekmek", description: "Doyurucu porsiyon ızgara köfte ekmek", price: 230, image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&auto=format&fit=crop", isSoldOut: false }
+                    ];
+
+                    for (const item of defaultProducts) {
+                        await addDoc(productsCol, item);
+                    }
+                    alert("Tüm 58 varsayılan ürün Firebase veritabanına başarıyla aktarıldı!");
+                    seedBtn.textContent = "🚀 Varsayılan 58 Ürünü Veritabanına Yükle";
+                    seedBtn.disabled = false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
